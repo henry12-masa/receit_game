@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レシート整理ゲーム</title>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8398161859137802"
+ crossorigin="anonymous"></script>
+
+<style>
+body{margin:0;font-family:sans-serif;background:#f3f6f8;text-align:center;}
+header{background:#263238;color:white;padding:18px;}
+.side-ad{position:fixed;top:120px;width:160px;z-index:999;}
+.left-ad{left:10px;}
+.right-ad{right:10px;}
+.ad-top{max-width:900px;margin:15px auto;}
+.game{max-width:950px;margin:20px auto;background:white;padding:20px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.15);}
+.status{display:flex;justify-content:space-around;flex-wrap:wrap;gap:10px;font-size:20px;font-weight:bold;}
+.receipt{margin:25px auto;padding:22px;width:280px;background:#fffdf3;border:3px dashed #999;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,.15);}
+.receipt .icon{font-size:42px;}
+.receipt .item{font-size:24px;font-weight:bold;margin-top:8px;}
+.receipt .price{font-size:20px;margin-top:8px;color:#555;}
+.question{font-size:22px;font-weight:bold;margin:20px 0;}
+.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.choice{padding:18px 10px;border:none;border-radius:14px;font-size:19px;font-weight:bold;cursor:pointer;background:#1976d2;color:white;}
+.choice:hover{background:#0d47a1;}
+.choice:disabled{opacity:.65;cursor:not-allowed;}
+#message{min-height:35px;margin-top:18px;font-size:24px;font-weight:bold;}
+.correct{color:green;}
+.wrong{color:red;}
+.restart{margin-top:20px;padding:12px 30px;font-size:18px;border:none;border-radius:10px;background:#333;color:white;cursor:pointer;}
+@media(max-width:1200px){.side-ad{display:none;}}
+@media(max-width:700px){.choices{grid-template-columns:1fr;}.status{font-size:16px;}.receipt{width:220px;}}
+</style>
+</head>
+
+<body>
+
+<div class="side-ad left-ad">
+<ins class="adsbygoogle"
+ style="display:block"
+ data-ad-client="ca-pub-8398161859137802"
+ data-ad-slot="5599163841"
+ data-ad-format="auto"
+ data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div class="side-ad right-ad">
+<ins class="adsbygoogle"
+ style="display:block"
+ data-ad-client="ca-pub-8398161859137802"
+ data-ad-slot="5599163841"
+ data-ad-format="auto"
+ data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<header>
+  <h1>🧾 レシート整理ゲーム</h1>
+  <p>レシートを正しいカテゴリに仕分けよう！</p>
+</header>
+
+<div class="ad-top">
+<ins class="adsbygoogle"
+ style="display:block"
+ data-ad-client="ca-pub-8398161859137802"
+ data-ad-slot="5599163841"
+ data-ad-format="auto"
+ data-full-width-responsive="true"></ins>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<div class="game">
+
+  <div class="status">
+    <div>問題：<span id="qnum">1</span> / 100</div>
+    <div>スコア：<span id="score">0</span></div>
+    <div>ミス：<span id="miss">0</span></div>
+  </div>
+
+  <div class="receipt">
+    <div class="icon">🧾</div>
+    <div class="item" id="receiptItem">読み込み中</div>
+    <div class="price" id="receiptPrice"></div>
+  </div>
+
+  <div class="question">このレシートはどのカテゴリ？</div>
+
+  <div class="choices" id="choices"></div>
+
+  <div id="message"></div>
+
+  <button class="restart" onclick="restartGame()">もう一度遊ぶ</button>
+
+</div>
+
+<script>
+const quizData = [
+  { item:"コピー用紙", price:"¥780", answer:"消耗品費", choices:["消耗品費","交通費","通信費","接待交際費"] },
+  { item:"ボールペン", price:"¥220", answer:"消耗品費", choices:["消耗品費","広告宣伝費","水道光熱費","旅費交通費"] },
+  { item:"ノート", price:"¥330", answer:"消耗品費", choices:["通信費","消耗品費","会議費","外注費"] },
+  { item:"プリンターインク", price:"¥3,980", answer:"消耗品費", choices:["消耗品費","地代家賃","接待交際費","雑費"] },
+
+  { item:"電車代", price:"¥420", answer:"旅費交通費", choices:["旅費交通費","通信費","消耗品費","広告宣伝費"] },
+  { item:"タクシー代", price:"¥1,850", answer:"旅費交通費", choices:["会議費","旅費交通費","水道光熱費","外注費"] },
+  { item:"新幹線代", price:"¥13,200", answer:"旅費交通費", choices:["旅費交通費","接待交際費","消耗品費","雑費"] },
+  { item:"駐車場代", price:"¥900", answer:"旅費交通費", choices:["旅費交通費","通信費","広告宣伝費","会議費"] },
+
+  { item:"スマホ料金", price:"¥5,980", answer:"通信費", choices:["通信費","消耗品費","旅費交通費","接待交際費"] },
+  { item:"インターネット料金", price:"¥4,950", answer:"通信費", choices:["水道光熱費","通信費","広告宣伝費","外注費"] },
+  { item:"サーバー代", price:"¥1,200", answer:"通信費", choices:["通信費","地代家賃","会議費","雑費"] },
+  { item:"ドメイン更新料", price:"¥1,628", answer:"通信費", choices:["広告宣伝費","通信費","旅費交通費","消耗品費"] },
+
+  { item:"カフェ打ち合わせ", price:"¥1,100", answer:"会議費", choices:["会議費","接待交際費","通信費","消耗品費"] },
+  { item:"会議室利用料", price:"¥2,500", answer:"会議費", choices:["会議費","旅費交通費","広告宣伝費","水道光熱費"] },
+  { item:"打ち合わせ用コーヒー", price:"¥680", answer:"会議費", choices:["接待交際費","会議費","雑費","外注費"] },
+
+  { item:"取引先との食事", price:"¥8,800", answer:"接待交際費", choices:["会議費","接待交際費","消耗品費","通信費"] },
+  { item:"取引先への手土産", price:"¥3,240", answer:"接待交際費", choices:["接待交際費","旅費交通費","広告宣伝費","水道光熱費"] },
+  { item:"お中元", price:"¥5,000", answer:"接待交際費", choices:["接待交際費","消耗品費","通信費","雑費"] },
+
+  { item:"Google広告", price:"¥10,000", answer:"広告宣伝費", choices:["広告宣伝費","通信費","会議費","旅費交通費"] },
+  { item:"チラシ印刷", price:"¥6,500", answer:"広告宣伝費", choices:["消耗品費","広告宣伝費","外注費","接待交際費"] },
+  { item:"SNS広告", price:"¥3,000", answer:"広告宣伝費", choices:["通信費","広告宣伝費","雑費","会議費"] },
+  { item:"名刺印刷", price:"¥2,200", answer:"広告宣伝費", choices:["広告宣伝費","旅費交通費","水道光熱費","地代家賃"] },
+
+  { item:"電気代", price:"¥7,200", answer:"水道光熱費", choices:["水道光熱費","通信費","消耗品費","会議費"] },
+  { item:"ガス代", price:"¥3,600", answer:"水道光熱費", choices:["地代家賃","水道光熱費","広告宣伝費","旅費交通費"] },
+  { item:"水道代", price:"¥2,400", answer:"水道光熱費", choices:["水道光熱費","外注費","接待交際費","雑費"] },
+
+  { item:"事務所家賃", price:"¥80,000", answer:"地代家賃", choices:["地代家賃","通信費","広告宣伝費","会議費"] },
+  { item:"レンタルオフィス代", price:"¥22,000", answer:"地代家賃", choices:["水道光熱費","地代家賃","消耗品費","旅費交通費"] },
+  { item:"コワーキング月額", price:"¥12,000", answer:"地代家賃", choices:["会議費","地代家賃","通信費","雑費"] },
+
+  { item:"記事作成依頼", price:"¥15,000", answer:"外注費", choices:["外注費","広告宣伝費","消耗品費","接待交際費"] },
+  { item:"デザイン制作依頼", price:"¥30,000", answer:"外注費", choices:["会議費","外注費","通信費","水道光熱費"] },
+  { item:"動画編集依頼", price:"¥20,000", answer:"外注費", choices:["外注費","旅費交通費","雑費","地代家賃"] },
+
+  { item:"少額の手数料", price:"¥330", answer:"雑費", choices:["雑費","通信費","消耗品費","会議費"] },
+  { item:"振込手数料", price:"¥220", answer:"雑費", choices:["旅費交通費","雑費","広告宣伝費","接待交際費"] },
+  { item:"証明書発行手数料", price:"¥600", answer:"雑費", choices:["雑費","外注費","水道光熱費","地代家賃"] }
+];
+
+while(quizData.length < 100){
+  quizData.push(...quizData.slice(0, quizData.length));
+}
+quizData.length = 100;
+
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+let miss = 0;
+let answered = false;
+
+const qnumEl = document.getElementById("qnum");
+const scoreEl = document.getElementById("score");
+const missEl = document.getElementById("miss");
+const itemEl = document.getElementById("receiptItem");
+const priceEl = document.getElementById("receiptPrice");
+const choicesEl = document.getElementById("choices");
+const messageEl = document.getElementById("message");
+
+function shuffle(array){
+  return array.sort(() => Math.random() - 0.5);
+}
+
+function startGame(){
+  questions = shuffle([...quizData]);
+  currentIndex = 0;
+  score = 0;
+  miss = 0;
+  scoreEl.textContent = score;
+  missEl.textContent = miss;
+  showQuestion();
+}
+
+function showQuestion(){
+  answered = false;
+  messageEl.textContent = "";
+  messageEl.className = "";
+
+  if(currentIndex >= questions.length){
+    itemEl.textContent = "整理完了";
+    priceEl.textContent = "";
+    choicesEl.innerHTML = "";
+    messageEl.innerHTML = `🎉 ゲーム終了！<br>スコア：${score}点`;
+    return;
+  }
+
+  const q = questions[currentIndex];
+
+  qnumEl.textContent = currentIndex + 1;
+  itemEl.textContent = q.item;
+  priceEl.textContent = q.price;
+  choicesEl.innerHTML = "";
+
+  shuffle([...q.choices]).forEach(choice => {
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.textContent = choice;
+    btn.onclick = () => checkAnswer(choice);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function checkAnswer(choice){
+  if(answered) return;
+  answered = true;
+
+  const q = questions[currentIndex];
+  document.querySelectorAll(".choice").forEach(btn => btn.disabled = true);
+
+  if(choice === q.answer){
+    score += 10;
+    messageEl.textContent = "✅ 正解！次のレシートへ";
+    messageEl.className = "correct";
+  }else{
+    miss++;
+    messageEl.textContent = `❌ ミス！正解は「${q.answer}」`;
+    messageEl.className = "wrong";
+  }
+
+  scoreEl.textContent = score;
+  missEl.textContent = miss;
+
+  setTimeout(() => {
+    currentIndex++;
+    showQuestion();
+  }, 900);
+}
+
+function restartGame(){
+  startGame();
+}
+
+startGame();
+</script>
+
+</body>
+</html>
